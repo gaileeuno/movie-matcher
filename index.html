@@ -239,6 +239,29 @@
       margin-bottom: 1rem;
     }
 
+    .trailer-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f5f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      margin-bottom: 1rem;
+    }
+
+    .trailer-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+
     .rating {
       display: flex;
       align-items: center;
@@ -441,7 +464,8 @@
       currentUser: 'person1',
       viewMode: 'rate',
       ratings: JSON.parse(localStorage.getItem('movieMatcherRatings') || '{}'),
-      loading: true
+      loading: true,
+      trailers: {} // Store trailer data
     };
 
     // Initialize app
@@ -454,6 +478,41 @@
       if (TMDB_API_KEY !== 'YOUR_API_KEY_HERE') {
         document.getElementById('apiNotice').style.display = 'none';
       }
+    }
+
+    // Helper function to truncate to full sentences
+    function truncateToSentences(text, maxSentences = 2) {
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+      return sentences.slice(0, maxSentences).join(' ').trim();
+    }
+
+    // Fetch trailer for a specific item
+    async function fetchTrailer(itemId, itemType) {
+      const key = `${itemType}-${itemId}`;
+      if (state.trailers[key]) return state.trailers[key];
+
+      try {
+        const response = await fetch(
+          `${TMDB_BASE_URL}/${itemType}/${itemId}/videos?api_key=${TMDB_API_KEY}`
+        );
+        const data = await response.json();
+        
+        // Find official trailer or teaser
+        const trailer = data.results?.find(
+          video => video.type === 'Trailer' && video.site === 'YouTube'
+        ) || data.results?.find(
+          video => video.type === 'Teaser' && video.site === 'YouTube'
+        );
+
+        if (trailer) {
+          state.trailers[key] = `https://www.youtube.com/watch?v=${trailer.key}`;
+          return state.trailers[key];
+        }
+      } catch (error) {
+        console.error('Error fetching trailer:', error);
+      }
+      
+      return null;
     }
 
     // Fetch trending content
@@ -558,7 +617,7 @@
     }
 
     // Create content card HTML
-    function createContentCard(item) {
+    async function createContentCard(item) {
       const itemType = item.title ? 'movie' : 'tv';
       const rating = getItemRating(item.id, itemType);
       const title = item.title || item.name;
@@ -568,6 +627,9 @@
       const isBothInterested = rating.person1 === true && rating.person2 === true;
       const person1Interested = rating.person1 === true;
       const person2Interested = rating.person2 === true;
+
+      // Fetch trailer
+      const trailerUrl = await fetchTrailer(item.id, itemType);
 
       return `
         <div class="content-card ${isBothInterested ? 'matched' : ''}">
@@ -588,7 +650,8 @@
                 : ''
               }
             </div>
-            ${item.overview ? `<p class="content-description">${item.overview.split(' ').slice(0, 50).join(' ')}${item.overview.split(' ').length > 50 ? '...' : ''}</p>` : ''}
+            ${item.overview ? `<p class="content-description">${truncateToSentences(item.overview, 2)}</p>` : ''}
+            ${trailerUrl ? `<a href="${trailerUrl}" target="_blank" class="trailer-btn">▶️ Watch Trailer</a>` : ''}
             
             ${state.viewMode === 'rate' ? `
               <div class="rating-buttons">
@@ -617,7 +680,7 @@
     }
 
     // Render app
-    function render() {
+    async function render() {
       const container = document.getElementById('contentContainer');
       
       if (state.loading) {
@@ -641,9 +704,13 @@
       if (items.length === 0 && emptyMessage) {
         container.innerHTML = emptyMessage;
       } else {
+        // Create all cards asynchronously
+        const cardPromises = items.map(item => createContentCard(item));
+        const cards = await Promise.all(cardPromises);
+        
         container.innerHTML = `
           <div class="content-grid">
-            ${items.map(item => createContentCard(item)).join('')}
+            ${cards.join('')}
           </div>
         `;
       }
