@@ -543,10 +543,14 @@
       streamingProvider: 'all', // all, hulu, disney, prime, apple, netflix, paramount, hbo
       searchQuery: '', // search query
       ratings: JSON.parse(localStorage.getItem('movieMatcherRatings') || '{}'),
+      ratedItems: JSON.parse(localStorage.getItem('movieMatcherRatedItems') || '{}'), // Store full item data for rated content
       loading: true,
       trailers: {}, // Store trailer data
       providers: {} // Store streaming provider data
     };
+
+    // Global cache of all items we've seen (for My List functionality)
+    let itemsCache = {};
 
     // Initialize app
     async function init() {
@@ -784,6 +788,13 @@
       }
       state.ratings[key][state.currentUser] = interested;
       localStorage.setItem('movieMatcherRatings', JSON.stringify(state.ratings));
+      
+      // Store the full item data for later retrieval in My List
+      if (itemsCache[key] && interested === true) {
+        state.ratedItems[key] = itemsCache[key];
+        localStorage.setItem('movieMatcherRatedItems', JSON.stringify(state.ratedItems));
+      }
+      
       render();
     }
 
@@ -809,12 +820,46 @@
 
     // Get user's list
     function getMyList() {
-      const allItems = [...state.movies, ...state.tvShows];
-      return allItems.filter(item => {
+      // Get all items that the current user has rated as interested
+      const myRatedItems = [];
+      
+      for (const key in state.ratings) {
+        const rating = state.ratings[key];
+        if (rating[state.currentUser] === true) {
+          // Check if we have the item data stored
+          if (state.ratedItems[key]) {
+            myRatedItems.push(state.ratedItems[key]);
+          }
+        }
+      }
+      
+      // Also include items from current view that are rated
+      const currentItems = [...state.movies, ...state.tvShows];
+      currentItems.forEach(item => {
         const itemType = item.title ? 'movie' : 'tv';
+        const key = `${itemType}-${item.id}`;
         const rating = getItemRating(item.id, itemType);
-        return rating[state.currentUser] === true;
+        
+        if (rating[state.currentUser] === true) {
+          // Add to ratedItems if not already there
+          if (!state.ratedItems[key]) {
+            state.ratedItems[key] = item;
+            localStorage.setItem('movieMatcherRatedItems', JSON.stringify(state.ratedItems));
+          }
+          
+          // Add to list if not already included
+          const alreadyIncluded = myRatedItems.some(i => {
+            const iType = i.title ? 'movie' : 'tv';
+            return iType === itemType && i.id === item.id;
+          });
+          
+          if (!alreadyIncluded) {
+            myRatedItems.push(item);
+          }
+        }
       });
+      
+      return myRatedItems;
     }
 
     // Create content card HTML
