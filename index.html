@@ -504,7 +504,7 @@
         <button class="tab-btn" data-streaming="apple">Apple TV+</button>
         <button class="tab-btn" data-streaming="netflix">Netflix</button>
         <button class="tab-btn" data-streaming="paramount">Paramount+</button>
-        <button class="tab-btn" data-streaming="hbo">HBO Max</button>
+        <button class="tab-btn" data-streaming="hbo">Max</button>
       </div>
 
       <div class="category-switch" id="categorySwitch">
@@ -617,7 +617,7 @@
           350: 'Apple TV+',
           8: 'Netflix',
           531: 'Paramount+',
-          384: 'HBO Max'
+          1899: 'Max'
         };
         
         const availableOn = usProviders
@@ -641,16 +641,16 @@
       try {
         // Watch provider IDs for US region:
         // Hulu = 15, Disney+ = 337, Prime Video = 9, Apple TV+ = 350
-        // Netflix = 8, Paramount+ = 531, HBO Max = 384
+        // Netflix = 8, Paramount+ = 531, Max (formerly HBO Max) = 1899
         const providerMap = {
-          'all': '15|337|9|350|8|531|384',
+          'all': '15|337|9|350|8|531|1899',
           'hulu': '15',
           'disney': '337',
           'prime': '9',
           'apple': '350',
           'netflix': '8',
           'paramount': '531',
-          'hbo': '384'
+          'hbo': '1899'
         };
         
         const providers = providerMap[state.streamingProvider];
