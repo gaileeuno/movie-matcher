@@ -237,6 +237,13 @@
       color: #b8a8d0;
     }
 
+    .content-description {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #b8a8d0;
+      margin-bottom: 1rem;
+    }
+
     .rating {
       display: flex;
       align-items: center;
@@ -583,6 +590,7 @@
                 : ''
               }
             </div>
+            ${item.overview ? `<p class="content-description">${item.overview.split(' ').slice(0, 50).join(' ')}${item.overview.split(' ').length > 50 ? '...' : ''}</p>` : ''}
             
             ${state.viewMode === 'rate' ? `
               <div class="rating-buttons">
