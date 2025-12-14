@@ -70,6 +70,37 @@
       animation: slideUp 0.8s ease-out 0.2s both;
     }
 
+    .search-container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto 1rem;
+      animation: slideUp 0.8s ease-out 0.15s both;
+    }
+
+    .search-bar {
+      width: 100%;
+      padding: 0.875rem 1.25rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      color: #f5f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      font-size: 1rem;
+      backdrop-filter: blur(20px);
+      transition: all 0.3s ease;
+    }
+
+    .search-bar::placeholder {
+      color: #86868b;
+    }
+
+    .search-bar:focus {
+      outline: none;
+      border-color: #0071e3;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+    }
+
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(30px); }
       to { opacity: 1; transform: translateY(0); }
@@ -423,6 +454,15 @@
       </p>
     </div>
 
+    <div class="search-container" id="searchContainer">
+      <input 
+        type="text" 
+        class="search-bar" 
+        id="searchBar"
+        placeholder="🔍 Search for movies and TV shows..."
+      />
+    </div>
+
     <div class="controls">
       <div class="user-switch">
         <button class="control-btn active" data-user="person1">Eilean</button>
@@ -482,6 +522,7 @@
       viewMode: 'rate',
       category: 'trending', // trending, popular, top_rated
       streamingProvider: 'all', // all, hulu, disney, prime, apple, netflix, paramount, hbo
+      searchQuery: '', // search query
       ratings: JSON.parse(localStorage.getItem('movieMatcherRatings') || '{}'),
       loading: true,
       trailers: {} // Store trailer data
@@ -559,7 +600,15 @@
         
         let moviesRes, tvRes;
         
-        if (state.category === 'trending') {
+        // If there's a search query, use the search endpoint
+        if (state.searchQuery.trim()) {
+          moviesRes = await fetch(
+            `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(state.searchQuery)}&page=1`
+          );
+          tvRes = await fetch(
+            `${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(state.searchQuery)}&page=1`
+          );
+        } else if (state.category === 'trending') {
           // Trending - sorted by popularity
           moviesRes = await fetch(
             `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&watch_region=${region}&with_watch_providers=${providers}&sort_by=popularity.desc&page=1`
@@ -600,6 +649,17 @@
 
     // Event listeners
     function setupEventListeners() {
+      // Search bar
+      const searchBar = document.getElementById('searchBar');
+      let searchTimeout;
+      searchBar.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+          state.searchQuery = e.target.value;
+          await fetchTrendingContent();
+        }, 500); // Debounce search by 500ms
+      });
+
       // User switch
       document.querySelectorAll('[data-user]').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -617,8 +677,9 @@
           e.target.classList.add('active');
           state.viewMode = e.target.dataset.view;
           
-          // Show/hide tab switch, category switch, and streaming switch
+          // Show/hide search bar, tab switch, category switch, and streaming switch
           const isRateMode = state.viewMode === 'rate';
+          document.getElementById('searchContainer').classList.toggle('hidden', !isRateMode);
           document.getElementById('tabSwitch').classList.toggle('hidden', !isRateMode);
           document.getElementById('categorySwitch').classList.toggle('hidden', !isRateMode);
           document.getElementById('streamingSwitch').classList.toggle('hidden', !isRateMode);
