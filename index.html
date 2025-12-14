@@ -270,6 +270,25 @@
       margin-bottom: 1rem;
     }
 
+    .streaming-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .streaming-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.75rem;
+      background: rgba(0, 113, 227, 0.15);
+      border: 1px solid rgba(0, 113, 227, 0.3);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #0071e3;
+    }
+
     .trailer-btn {
       display: inline-flex;
       align-items: center;
@@ -439,7 +458,7 @@
 <body>
   <div class="app">
     <header>
-      <h1>Movie Night Matcher</h1>
+      <h1>Matchflix</h1>
       <p class="tagline">Find something you'll both love to watch</p>
     </header>
 
@@ -525,7 +544,8 @@
       searchQuery: '', // search query
       ratings: JSON.parse(localStorage.getItem('movieMatcherRatings') || '{}'),
       loading: true,
-      trailers: {} // Store trailer data
+      trailers: {}, // Store trailer data
+      providers: {} // Store streaming provider data
     };
 
     // Initialize app
@@ -573,6 +593,44 @@
       }
       
       return null;
+    }
+
+    // Fetch streaming providers for a specific item
+    async function fetchProviders(itemId, itemType) {
+      const key = `${itemType}-${itemId}`;
+      if (state.providers[key]) return state.providers[key];
+
+      try {
+        const response = await fetch(
+          `${TMDB_BASE_URL}/${itemType}/${itemId}/watch/providers?api_key=${TMDB_API_KEY}`
+        );
+        const data = await response.json();
+        
+        // Get US providers
+        const usProviders = data.results?.US?.flatrate || [];
+        
+        // Map provider IDs to names we care about
+        const providerMap = {
+          15: 'Hulu',
+          337: 'Disney+',
+          9: 'Prime Video',
+          350: 'Apple TV+',
+          8: 'Netflix',
+          531: 'Paramount+',
+          384: 'HBO Max'
+        };
+        
+        const availableOn = usProviders
+          .filter(p => providerMap[p.provider_id])
+          .map(p => providerMap[p.provider_id]);
+        
+        state.providers[key] = availableOn;
+        return availableOn;
+      } catch (error) {
+        console.error('Error fetching providers:', error);
+      }
+      
+      return [];
     }
 
     // Fetch trending content
@@ -771,8 +829,9 @@
       const person1Interested = rating.person1 === true;
       const person2Interested = rating.person2 === true;
 
-      // Fetch trailer
+      // Fetch trailer and providers
       const trailerUrl = await fetchTrailer(item.id, itemType);
+      const providers = await fetchProviders(item.id, itemType);
 
       return `
         <div class="content-card ${isBothInterested ? 'matched' : ''}">
@@ -794,6 +853,11 @@
               }
             </div>
             ${item.overview ? `<p class="content-description">${truncateToSentences(item.overview, 2)}</p>` : ''}
+            ${providers.length > 0 ? `
+              <div class="streaming-badges">
+                ${providers.map(p => `<span class="streaming-badge">${p}</span>`).join('')}
+              </div>
+            ` : ''}
             ${trailerUrl ? `<a href="${trailerUrl}" target="_blank" class="trailer-btn">▶️ Watch Trailer</a>` : ''}
             
             ${state.viewMode === 'rate' ? `
