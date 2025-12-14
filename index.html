@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Movie Night Matcher</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
     * {
       margin: 0;
@@ -14,9 +14,9 @@
     }
 
     body {
-      font-family: 'DM Sans', sans-serif;
-      background: linear-gradient(135deg, #1a1625 0%, #2d1b3d 50%, #1f1429 100%);
-      color: #f5f0ff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #000000;
+      color: #f5f5f7;
       min-height: 100vh;
     }
 
@@ -44,26 +44,20 @@
     }
 
     h1 {
-      font-family: 'Crimson Pro', serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', sans-serif;
       font-size: 3.5rem;
       font-weight: 700;
-      background: linear-gradient(135deg, #ff6b9d 0%, #c06bff 50%, #ff6b9d 100%);
-      background-size: 200% 200%;
+      background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 0.5rem;
-      animation: gradientShift 8s ease infinite;
-    }
-
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
+      letter-spacing: -0.02em;
     }
 
     .tagline {
       font-size: 1.1rem;
-      color: #d4c5e8;
+      color: #86868b;
       font-weight: 400;
     }
 
@@ -84,19 +78,19 @@
     .user-switch, .view-switch, .tab-switch {
       display: flex;
       gap: 0.5rem;
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.08);
       padding: 0.5rem;
       border-radius: 12px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
     }
 
     .control-btn, .tab-btn {
       padding: 0.75rem 1.5rem;
       border: none;
       background: transparent;
-      color: #d4c5e8;
-      font-family: 'DM Sans', sans-serif;
+      color: #f5f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
       font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;
@@ -110,15 +104,15 @@
     }
 
     .control-btn:hover, .tab-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.12);
       color: #fff;
     }
 
     .control-btn.active, .tab-btn.active {
-      background: linear-gradient(135deg, #ff6b9d, #c06bff);
+      background: #0071e3;
       color: white;
       font-weight: 600;
-      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
     }
 
     .content-grid {
@@ -134,11 +128,11 @@
     }
 
     .content-card {
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.06);
       border-radius: 16px;
       overflow: hidden;
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       position: relative;
       animation: cardAppear 0.6s ease-out both;
     }
@@ -156,14 +150,14 @@
 
     .content-card:hover {
       transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-      border-color: rgba(255, 107, 157, 0.3);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      border-color: rgba(255, 255, 255, 0.2);
     }
 
     .content-card.matched {
-      border: 2px solid #ff6b9d;
-      background: linear-gradient(135deg, rgba(255, 107, 157, 0.1), rgba(192, 107, 255, 0.1));
-      box-shadow: 0 8px 25px rgba(255, 107, 157, 0.2);
+      border: 1px solid #0071e3;
+      background: rgba(0, 113, 227, 0.1);
+      box-shadow: 0 8px 25px rgba(0, 113, 227, 0.2);
     }
 
     .poster-container {
@@ -198,7 +192,7 @@
       position: absolute;
       top: 1rem;
       right: 1rem;
-      background: linear-gradient(135deg, #ff6b9d, #c06bff);
+      background: #0071e3;
       padding: 0.5rem 1rem;
       border-radius: 20px;
       display: flex;
@@ -206,7 +200,7 @@
       gap: 0.5rem;
       font-weight: 600;
       font-size: 0.85rem;
-      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+      box-shadow: 0 4px 15px rgba(0, 113, 227, 0.4);
       animation: badgePulse 2s ease-in-out infinite;
     }
 
@@ -220,12 +214,13 @@
     }
 
     .content-title {
-      font-family: 'Crimson Pro', serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
       font-size: 1.3rem;
       font-weight: 600;
       margin-bottom: 0.5rem;
-      color: #fff;
+      color: #f5f5f7;
       line-height: 1.3;
+      letter-spacing: -0.01em;
     }
 
     .content-meta {
@@ -234,13 +229,13 @@
       align-items: center;
       margin-bottom: 1rem;
       font-size: 0.9rem;
-      color: #b8a8d0;
+      color: #86868b;
     }
 
     .content-description {
       font-size: 0.9rem;
       line-height: 1.5;
-      color: #b8a8d0;
+      color: #86868b;
       margin-bottom: 1rem;
     }
 
@@ -248,7 +243,7 @@
       display: flex;
       align-items: center;
       gap: 0.25rem;
-      color: #ffd700;
+      color: #f5a623;
     }
 
     .rating-buttons {
@@ -260,10 +255,10 @@
     .rating-btn {
       flex: 1;
       padding: 0.75rem;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.05);
-      color: #d4c5e8;
-      font-family: 'DM Sans', sans-serif;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.08);
+      color: #f5f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
       font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
@@ -277,20 +272,20 @@
 
     .rating-btn:hover {
       transform: translateY(-2px);
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.12);
     }
 
     .rating-btn.interested.active {
-      background: linear-gradient(135deg, #ff6b9d, #c06bff);
-      border-color: #ff6b9d;
+      background: #0071e3;
+      border-color: #0071e3;
       color: white;
-      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+      box-shadow: 0 4px 15px rgba(0, 113, 227, 0.3);
     }
 
     .rating-btn.not-interested.active {
-      background: rgba(150, 150, 150, 0.3);
-      border-color: rgba(150, 150, 150, 0.5);
-      color: #999;
+      background: rgba(134, 134, 139, 0.3);
+      border-color: rgba(134, 134, 139, 0.5);
+      color: #86868b;
     }
 
     .interest-indicators {
@@ -312,25 +307,27 @@
       text-align: center;
       padding: 4rem 2rem;
       font-size: 1.2rem;
-      color: #d4c5e8;
+      color: #86868b;
     }
 
     .empty-state {
       text-align: center;
       padding: 4rem 2rem;
-      color: #b8a8d0;
+      color: #86868b;
     }
 
     .empty-state h3 {
-      font-family: 'Crimson Pro', serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
       font-size: 2rem;
       margin-bottom: 1rem;
-      color: #d4c5e8;
+      color: #f5f5f7;
+      font-weight: 600;
+      letter-spacing: -0.01em;
     }
 
     .api-notice {
-      background: rgba(255, 107, 157, 0.1);
-      border: 1px solid rgba(255, 107, 157, 0.3);
+      background: rgba(0, 113, 227, 0.1);
+      border: 1px solid rgba(0, 113, 227, 0.3);
       padding: 1.5rem;
       border-radius: 12px;
       margin-bottom: 2rem;
@@ -339,19 +336,20 @@
     }
 
     .api-notice h3 {
-      font-family: 'Crimson Pro', serif;
-      color: #ff6b9d;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      color: #0071e3;
       margin-bottom: 0.5rem;
+      font-weight: 600;
     }
 
     .api-notice p {
-      color: #d4c5e8;
+      color: #86868b;
       font-size: 0.95rem;
       line-height: 1.6;
     }
 
     .api-notice a {
-      color: #ff6b9d;
+      color: #0071e3;
       text-decoration: none;
       font-weight: 600;
     }
