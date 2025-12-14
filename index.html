@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Night Matcher</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: linear-gradient(135deg, #1a1625 0%, #2d1b3d 50%, #1f1429 100%);
+      color: #f5f0ff;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      animation: slideDown 0.8s ease-out;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      font-family: 'Crimson Pro', serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ff6b9d 0%, #c06bff 50%, #ff6b9d 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      animation: gradientShift 8s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .tagline {
+      font-size: 1.1rem;
+      color: #d4c5e8;
+      font-weight: 400;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+      animation: slideUp 0.8s ease-out 0.2s both;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .user-switch, .view-switch, .tab-switch {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.5rem;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .control-btn, .tab-btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: transparent;
+      color: #d4c5e8;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .control-btn:hover, .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .control-btn.active, .tab-btn.active {
+      background: linear-gradient(135deg, #ff6b9d, #c06bff);
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 2rem;
+      animation: gridFadeIn 0.8s ease-out 0.4s both;
+    }
+
+    @keyframes gridFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .content-card {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      animation: cardAppear 0.6s ease-out both;
+    }
+
+    @keyframes cardAppear {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .content-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 107, 157, 0.3);
+    }
+
+    .content-card.matched {
+      border: 2px solid #ff6b9d;
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.1), rgba(192, 107, 255, 0.1));
+      box-shadow: 0 8px 25px rgba(255, 107, 157, 0.2);
+    }
+
+    .poster-container {
+      position: relative;
+      aspect-ratio: 2/3;
+      background: rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .poster {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .content-card:hover .poster {
+      transform: scale(1.05);
+    }
+
+    .poster-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 3rem;
+    }
+
+    .match-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: linear-gradient(135deg, #ff6b9d, #c06bff);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+      animation: badgePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes badgePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .content-info {
+      padding: 1.25rem;
+    }
+
+    .content-title {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    .content-meta {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      color: #b8a8d0;
+    }
+
+    .rating {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: #ffd700;
+    }
+
+    .rating-buttons {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .rating-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: #d4c5e8;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .rating-btn:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .rating-btn.interested.active {
+      background: linear-gradient(135deg, #ff6b9d, #c06bff);
+      border-color: #ff6b9d;
+      color: white;
+      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+    }
+
+    .rating-btn.not-interested.active {
+      background: rgba(150, 150, 150, 0.3);
+      border-color: rgba(150, 150, 150, 0.5);
+      color: #999;
+    }
+
+    .interest-indicators {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .indicator {
+      padding: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 4rem 2rem;
+      font-size: 1.2rem;
+      color: #d4c5e8;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #b8a8d0;
+    }
+
+    .empty-state h3 {
+      font-family: 'Crimson Pro', serif;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #d4c5e8;
+    }
+
+    .api-notice {
+      background: rgba(255, 107, 157, 0.1);
+      border: 1px solid rgba(255, 107, 157, 0.3);
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      text-align: center;
+      animation: slideUp 0.8s ease-out 0.1s both;
+    }
+
+    .api-notice h3 {
+      font-family: 'Crimson Pro', serif;
+      color: #ff6b9d;
+      margin-bottom: 0.5rem;
+    }
+
+    .api-notice p {
+      color: #d4c5e8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .api-notice a {
+      color: #ff6b9d;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .api-notice a:hover {
+      text-decoration: underline;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+
+      .content-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      .user-switch, .view-switch, .tab-switch {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Movie Night Matcher</h1>
+      <p class="tagline">Find something you'll both love to watch</p>
+    </header>
+
+    <div id="apiNotice" class="api-notice">
+      <h3>Setup Required</h3>
+      <p>
+        To use this app, you need a free TMDb API key. Get one at 
+        <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">
+          themoviedb.org/settings/api
+        </a>
+        and replace 'YOUR_API_KEY_HERE' in the code (line 350).
+      </p>
+    </div>
+
+    <div class="controls">
+      <div class="user-switch">
+        <button class="control-btn active" data-user="person1">Partner 1</button>
+        <button class="control-btn" data-user="person2">Partner 2</button>
+      </div>
+
+      <div class="view-switch">
+        <button class="control-btn active" data-view="rate">Rate Content</button>
+        <button class="control-btn" data-view="matches">
+          <span>✨</span> Matches
+        </button>
+        <button class="control-btn" data-view="mylist">My List</button>
+      </div>
+
+      <div class="tab-switch" id="tabSwitch">
+        <button class="tab-btn active" data-tab="movies">
+          <span>🎬</span> Movies
+        </button>
+        <button class="tab-btn" data-tab="tv">
+          <span>📺</span> TV Shows
+        </button>
+      </div>
+    </div>
+
+    <div id="contentContainer"></div>
+  </div>
+
+  <script>
+    // TMDb API configuration
+    const TMDB_API_KEY = 'YOUR_API_KEY_HERE'; // Replace with your API key from https://www.themoviedb.org/settings/api
+    const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+    const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+
+    // App state
+    let state = {
+      movies: [],
+      tvShows: [],
+      activeTab: 'movies',
+      currentUser: 'person1',
+      viewMode: 'rate',
+      ratings: JSON.parse(localStorage.getItem('movieMatcherRatings') || '{}'),
+      loading: true
+    };
+
+    // Initialize app
+    async function init() {
+      await fetchTrendingContent();
+      setupEventListeners();
+      render();
+      
+      // Hide API notice if key is set
+      if (TMDB_API_KEY !== 'YOUR_API_KEY_HERE') {
+        document.getElementById('apiNotice').style.display = 'none';
+      }
+    }
+
+    // Fetch trending content
+    async function fetchTrendingContent() {
+      state.loading = true;
+      render();
+      
+      try {
+        const [moviesRes, tvRes] = await Promise.all([
+          fetch(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}`),
+          fetch(`${TMDB_BASE_URL}/trending/tv/week?api_key=${TMDB_API_KEY}`)
+        ]);
+
+        const moviesData = await moviesRes.json();
+        const tvData = await tvRes.json();
+
+        state.movies = moviesData.results || [];
+        state.tvShows = tvData.results || [];
+      } catch (error) {
+        console.error('Error fetching content:', error);
+      }
+      
+      state.loading = false;
+      render();
+    }
+
+    // Event listeners
+    function setupEventListeners() {
+      // User switch
+      document.querySelectorAll('[data-user]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('[data-user]').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          state.currentUser = e.target.dataset.user;
+          render();
+        });
+      });
+
+      // View switch
+      document.querySelectorAll('[data-view]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          state.viewMode = e.target.dataset.view;
+          
+          // Show/hide tab switch
+          document.getElementById('tabSwitch').classList.toggle('hidden', state.viewMode !== 'rate');
+          render();
+        });
+      });
+
+      // Tab switch
+      document.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          state.activeTab = e.target.dataset.tab;
+          render();
+        });
+      });
+    }
+
+    // Handle rating
+    function handleRating(itemId, itemType, interested) {
+      const key = `${itemType}-${itemId}`;
+      if (!state.ratings[key]) {
+        state.ratings[key] = {};
+      }
+      state.ratings[key][state.currentUser] = interested;
+      localStorage.setItem('movieMatcherRatings', JSON.stringify(state.ratings));
+      render();
+    }
+
+    // Get item rating
+    function getItemRating(itemId, itemType) {
+      return state.ratings[`${itemType}-${itemId}`] || {};
+    }
+
+    // Get current items
+    function getCurrentItems() {
+      return state.activeTab === 'movies' ? state.movies : state.tvShows;
+    }
+
+    // Get matches
+    function getMatches() {
+      const allItems = [...state.movies, ...state.tvShows];
+      return allItems.filter(item => {
+        const itemType = item.title ? 'movie' : 'tv';
+        const rating = getItemRating(item.id, itemType);
+        return rating.person1 === true && rating.person2 === true;
+      });
+    }
+
+    // Get user's list
+    function getMyList() {
+      const allItems = [...state.movies, ...state.tvShows];
+      return allItems.filter(item => {
+        const itemType = item.title ? 'movie' : 'tv';
+        const rating = getItemRating(item.id, itemType);
+        return rating[state.currentUser] === true;
+      });
+    }
+
+    // Create content card HTML
+    function createContentCard(item) {
+      const itemType = item.title ? 'movie' : 'tv';
+      const rating = getItemRating(item.id, itemType);
+      const title = item.title || item.name;
+      const date = item.release_date || item.first_air_date;
+      const year = date ? new Date(date).getFullYear() : '';
+      
+      const isBothInterested = rating.person1 === true && rating.person2 === true;
+      const person1Interested = rating.person1 === true;
+      const person2Interested = rating.person2 === true;
+
+      return `
+        <div class="content-card ${isBothInterested ? 'matched' : ''}">
+          <div class="poster-container">
+            ${item.poster_path 
+              ? `<img src="${TMDB_IMAGE_BASE}${item.poster_path}" alt="${title}" class="poster">`
+              : `<div class="poster-placeholder">${itemType === 'movie' ? '🎬' : '📺'}</div>`
+            }
+            ${isBothInterested ? '<div class="match-badge"><span>✨</span><span>Match!</span></div>' : ''}
+          </div>
+          
+          <div class="content-info">
+            <h3 class="content-title">${title}</h3>
+            <div class="content-meta">
+              <span class="year">${year}</span>
+              ${item.vote_average > 0 
+                ? `<span class="rating">⭐ ${item.vote_average.toFixed(1)}</span>`
+                : ''
+              }
+            </div>
+            
+            ${state.viewMode === 'rate' ? `
+              <div class="rating-buttons">
+                <button 
+                  onclick="handleRating(${item.id}, '${itemType}', false)"
+                  class="rating-btn not-interested ${rating[state.currentUser] === false ? 'active' : ''}"
+                >
+                  ✕ Pass
+                </button>
+                <button 
+                  onclick="handleRating(${item.id}, '${itemType}', true)"
+                  class="rating-btn interested ${rating[state.currentUser] === true ? 'active' : ''}"
+                >
+                  ❤️ Interested
+                </button>
+              </div>
+            ` : `
+              <div class="interest-indicators">
+                ${person1Interested ? '<div class="indicator person1">Partner 1 ❤️</div>' : ''}
+                ${person2Interested ? '<div class="indicator person2">Partner 2 ❤️</div>' : ''}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    // Render app
+    function render() {
+      const container = document.getElementById('contentContainer');
+      
+      if (state.loading) {
+        container.innerHTML = '<div class="loading">Loading trending content...</div>';
+        return;
+      }
+
+      let items = [];
+      let emptyMessage = '';
+
+      if (state.viewMode === 'rate') {
+        items = getCurrentItems();
+      } else if (state.viewMode === 'matches') {
+        items = getMatches();
+        emptyMessage = '<div class="empty-state"><h3>No matches yet</h3><p>Start rating content to find your perfect matches!</p></div>';
+      } else if (state.viewMode === 'mylist') {
+        items = getMyList();
+        emptyMessage = '<div class="empty-state"><h3>Your list is empty</h3><p>Mark some movies or shows as interested to build your list!</p></div>';
+      }
+
+      if (items.length === 0 && emptyMessage) {
+        container.innerHTML = emptyMessage;
+      } else {
+        container.innerHTML = `
+          <div class="content-grid">
+            ${items.map(item => createContentCard(item)).join('')}
+          </div>
+        `;
+      }
+    }
+
+    // Start the app
+    init();
+  </script>
+</body>
+</html>
