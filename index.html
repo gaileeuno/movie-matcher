@@ -75,7 +75,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .user-switch, .view-switch, .tab-switch {
+    .user-switch, .view-switch, .tab-switch, .category-switch, .streaming-switch {
       display: flex;
       gap: 0.5rem;
       background: rgba(255, 255, 255, 0.08);
@@ -437,6 +437,23 @@
         <button class="control-btn" data-view="mylist">My List</button>
       </div>
 
+      <div class="streaming-switch" id="streamingSwitch">
+        <button class="tab-btn active" data-streaming="all">All Services</button>
+        <button class="tab-btn" data-streaming="hulu">Hulu</button>
+        <button class="tab-btn" data-streaming="disney">Disney+</button>
+        <button class="tab-btn" data-streaming="prime">Prime Video</button>
+        <button class="tab-btn" data-streaming="apple">Apple TV+</button>
+        <button class="tab-btn" data-streaming="netflix">Netflix</button>
+        <button class="tab-btn" data-streaming="paramount">Paramount+</button>
+        <button class="tab-btn" data-streaming="hbo">HBO Max</button>
+      </div>
+
+      <div class="category-switch" id="categorySwitch">
+        <button class="tab-btn active" data-category="trending">Trending</button>
+        <button class="tab-btn" data-category="popular">Popular</button>
+        <button class="tab-btn" data-category="top_rated">Top Rated</button>
+      </div>
+
       <div class="tab-switch" id="tabSwitch">
         <button class="tab-btn active" data-tab="movies">
           <span>🎬</span> Movies
@@ -463,6 +480,8 @@
       activeTab: 'movies',
       currentUser: 'person1',
       viewMode: 'rate',
+      category: 'trending', // trending, popular, top_rated
+      streamingProvider: 'all', // all, hulu, disney, prime, apple, netflix, paramount, hbo
       ratings: JSON.parse(localStorage.getItem('movieMatcherRatings') || '{}'),
       loading: true,
       trailers: {} // Store trailer data
@@ -521,10 +540,50 @@
       render();
       
       try {
-        const [moviesRes, tvRes] = await Promise.all([
-          fetch(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}`),
-          fetch(`${TMDB_BASE_URL}/trending/tv/week?api_key=${TMDB_API_KEY}`)
-        ]);
+        // Watch provider IDs for US region:
+        // Hulu = 15, Disney+ = 337, Prime Video = 9, Apple TV+ = 350
+        // Netflix = 8, Paramount+ = 531, HBO Max = 384
+        const providerMap = {
+          'all': '15|337|9|350|8|531|384',
+          'hulu': '15',
+          'disney': '337',
+          'prime': '9',
+          'apple': '350',
+          'netflix': '8',
+          'paramount': '531',
+          'hbo': '384'
+        };
+        
+        const providers = providerMap[state.streamingProvider];
+        const region = 'US'; // United States
+        
+        let moviesRes, tvRes;
+        
+        if (state.category === 'trending') {
+          // Trending - sorted by popularity
+          moviesRes = await fetch(
+            `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&watch_region=${region}&with_watch_providers=${providers}&sort_by=popularity.desc&page=1`
+          );
+          tvRes = await fetch(
+            `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&watch_region=${region}&with_watch_providers=${providers}&sort_by=popularity.desc&page=1`
+          );
+        } else if (state.category === 'popular') {
+          // Popular with streaming filters
+          moviesRes = await fetch(
+            `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&watch_region=${region}&with_watch_providers=${providers}&sort_by=popularity.desc&page=1`
+          );
+          tvRes = await fetch(
+            `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&watch_region=${region}&with_watch_providers=${providers}&sort_by=popularity.desc&page=1`
+          );
+        } else if (state.category === 'top_rated') {
+          // Top rated with streaming filters
+          moviesRes = await fetch(
+            `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&watch_region=${region}&with_watch_providers=${providers}&sort_by=vote_average.desc&vote_count.gte=1000&page=1`
+          );
+          tvRes = await fetch(
+            `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&watch_region=${region}&with_watch_providers=${providers}&sort_by=vote_average.desc&vote_count.gte=500&page=1`
+          );
+        }
 
         const moviesData = await moviesRes.json();
         const tvData = await tvRes.json();
@@ -558,9 +617,32 @@
           e.target.classList.add('active');
           state.viewMode = e.target.dataset.view;
           
-          // Show/hide tab switch
-          document.getElementById('tabSwitch').classList.toggle('hidden', state.viewMode !== 'rate');
+          // Show/hide tab switch, category switch, and streaming switch
+          const isRateMode = state.viewMode === 'rate';
+          document.getElementById('tabSwitch').classList.toggle('hidden', !isRateMode);
+          document.getElementById('categorySwitch').classList.toggle('hidden', !isRateMode);
+          document.getElementById('streamingSwitch').classList.toggle('hidden', !isRateMode);
           render();
+        });
+      });
+
+      // Streaming provider switch
+      document.querySelectorAll('[data-streaming]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          document.querySelectorAll('[data-streaming]').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          state.streamingProvider = e.target.dataset.streaming;
+          await fetchTrendingContent();
+        });
+      });
+
+      // Category switch
+      document.querySelectorAll('[data-category]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          document.querySelectorAll('[data-category]').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          state.category = e.target.dataset.category;
+          await fetchTrendingContent();
         });
       });
 
