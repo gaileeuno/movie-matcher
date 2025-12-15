@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Matchflix</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -543,6 +544,11 @@
     const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
     const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
+    // Supabase configuration
+    const SUPABASE_URL = 'https://kuskiynkppnodrdvdgmh.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1c2tpeW5rcHBub2RyZHZkZ21oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NjA5NzEsImV4cCI6MjA4MTMzNjk3MX0.dqa6DiXWez_EShAVxoothX9ekAlmKCaPw31v9jhu8KM';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     // App state
     let state = {
       movies: [],
@@ -553,9 +559,10 @@
       category: 'trending', // trending, popular, top_rated
       streamingProvider: 'all', // all, hulu, disney, prime, apple, netflix, paramount, hbo
       searchQuery: '', // search query
-      ratings: JSON.parse(localStorage.getItem('movieMatcherRatings') || '{}'),
-      ratedItems: JSON.parse(localStorage.getItem('movieMatcherRatedItems') || '{}'), // Store full item data for rated content
+      ratings: {}, // Will be loaded from Supabase
+      ratedItems: {}, // Will be loaded from Supabase
       loading: true,
+      loadingRatings: true, // New: track if ratings are being loaded
       trailers: {}, // Store trailer data
       providers: {} // Store streaming provider data
     };
@@ -563,8 +570,70 @@
     // Global cache of all items we've seen (for My List functionality)
     let itemsCache = {};
 
+    // Load all ratings from Supabase
+    async function loadRatingsFromSupabase() {
+      try {
+        const { data, error } = await supabase
+          .from('ratings')
+          .select('*');
+
+        if (error) throw error;
+
+        // Convert Supabase data back to our ratings format
+        state.ratings = {};
+        state.ratedItems = {};
+
+        data.forEach(row => {
+          const key = `${row.item_type}-${row.item_id}`;
+          
+          if (!state.ratings[key]) {
+            state.ratings[key] = {};
+          }
+          
+          state.ratings[key][row.user_name] = row.rating;
+          
+          if (row.item_data) {
+            state.ratedItems[key] = row.item_data;
+          }
+        });
+
+        console.log('Loaded ratings from Supabase:', state.ratings);
+      } catch (error) {
+        console.error('Error loading ratings from Supabase:', error);
+      } finally {
+        state.loadingRatings = false;
+      }
+    }
+
+    // Save a rating to Supabase
+    async function saveRatingToSupabase(itemId, itemType, userName, rating, itemData) {
+      try {
+        const { data, error } = await supabase
+          .from('ratings')
+          .upsert({
+            user_name: userName,
+            item_id: itemId,
+            item_type: itemType,
+            rating: rating,
+            item_data: itemData,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_name,item_id,item_type'
+          });
+
+        if (error) throw error;
+        
+        console.log('Saved rating to Supabase:', { itemId, itemType, userName, rating });
+      } catch (error) {
+        console.error('Error saving rating to Supabase:', error);
+      }
+    }
+
     // Initialize app
     async function init() {
+      // Load ratings from Supabase first
+      await loadRatingsFromSupabase();
+      
       await fetchTrendingContent();
       setupEventListeners();
       render();
@@ -792,7 +861,7 @@
     }
 
     // Handle rating
-    function handleRating(itemId, itemType, interested) {
+    async function handleRating(itemId, itemType, interested) {
       const key = `${itemType}-${itemId}`;
       if (!state.ratings[key]) {
         state.ratings[key] = {};
@@ -805,16 +874,27 @@
         state.ratings[key][state.currentUser] = interested;
       }
       
-      localStorage.setItem('movieMatcherRatings', JSON.stringify(state.ratings));
+      // Save to Supabase instead of localStorage
+      const itemData = itemsCache[key] || null;
+      await saveRatingToSupabase(
+        itemId, 
+        itemType, 
+        state.currentUser, 
+        state.ratings[key][state.currentUser],
+        itemData
+      );
       
-      // Always store the full item data when rating (regardless of interested or not)
-      // This ensures items from search are captured
-      if (itemsCache[key]) {
-        state.ratedItems[key] = itemsCache[key];
-        localStorage.setItem('movieMatcherRatedItems', JSON.stringify(state.ratedItems));
+      // Store item data locally for quick access
+      if (itemData) {
+        state.ratedItems[key] = itemData;
       }
       
       render();
+    }
+
+    // Wrapper for onclick handlers (since they can't be async)
+    function rateItem(itemId, itemType, interested) {
+      handleRating(itemId, itemType, interested);
     }
 
     // Get item rating
@@ -940,13 +1020,13 @@
             ${state.viewMode === 'rate' ? `
               <div class="rating-buttons">
                 <button 
-                  onclick="handleRating(${item.id}, '${itemType}', false)"
+                  onclick="rateItem(${item.id}, '${itemType}', false)"
                   class="rating-btn not-interested ${rating[state.currentUser] === false ? 'active' : ''}"
                 >
                   ✕ Pass
                 </button>
                 <button 
-                  onclick="handleRating(${item.id}, '${itemType}', true)"
+                  onclick="rateItem(${item.id}, '${itemType}', true)"
                   class="rating-btn interested ${rating[state.currentUser] === true ? 'active' : ''}"
                 >
                   ❤️ Interested
@@ -955,7 +1035,7 @@
             ` : state.viewMode === 'mylist' ? `
               <div class="rating-buttons">
                 <button 
-                  onclick="handleRating(${item.id}, '${itemType}', true)"
+                  onclick="rateItem(${item.id}, '${itemType}', true)"
                   class="rating-btn remove-btn"
                 >
                   ✕ Remove from My List
