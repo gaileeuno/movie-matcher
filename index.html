@@ -786,7 +786,14 @@
       if (!state.ratings[key]) {
         state.ratings[key] = {};
       }
-      state.ratings[key][state.currentUser] = interested;
+      
+      // Toggle off if clicking the same rating again
+      if (state.ratings[key][state.currentUser] === interested) {
+        state.ratings[key][state.currentUser] = null; // Unselect
+      } else {
+        state.ratings[key][state.currentUser] = interested;
+      }
+      
       localStorage.setItem('movieMatcherRatings', JSON.stringify(state.ratings));
       
       // Always store the full item data when rating (regardless of interested or not)
