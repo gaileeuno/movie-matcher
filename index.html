@@ -361,6 +361,17 @@
       color: #86868b;
     }
 
+    .rating-btn.remove-btn {
+      background: rgba(255, 59, 48, 0.1);
+      border-color: rgba(255, 59, 48, 0.3);
+      color: #ff3b30;
+    }
+
+    .rating-btn.remove-btn:hover {
+      background: rgba(255, 59, 48, 0.2);
+      border-color: rgba(255, 59, 48, 0.5);
+    }
+
     .interest-indicators {
       display: flex;
       flex-direction: column;
@@ -939,6 +950,15 @@
                   class="rating-btn interested ${rating[state.currentUser] === true ? 'active' : ''}"
                 >
                   ❤️ Interested
+                </button>
+              </div>
+            ` : state.viewMode === 'mylist' ? `
+              <div class="rating-buttons">
+                <button 
+                  onclick="handleRating(${item.id}, '${itemType}', true)"
+                  class="rating-btn remove-btn"
+                >
+                  ✕ Remove from My List
                 </button>
               </div>
             ` : `
