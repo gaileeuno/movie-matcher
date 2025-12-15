@@ -739,9 +739,9 @@
           e.target.classList.add('active');
           state.viewMode = e.target.dataset.view;
           
-          // Show/hide search bar, tab switch, category switch, and streaming switch
+          // Show/hide tab switch, category switch, and streaming switch only in rate mode
+          // Search bar is always visible
           const isRateMode = state.viewMode === 'rate';
-          document.getElementById('searchContainer').classList.toggle('hidden', !isRateMode);
           document.getElementById('tabSwitch').classList.toggle('hidden', !isRateMode);
           document.getElementById('categorySwitch').classList.toggle('hidden', !isRateMode);
           document.getElementById('streamingSwitch').classList.toggle('hidden', !isRateMode);
