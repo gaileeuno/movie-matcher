@@ -780,7 +780,7 @@
       supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth event:', event);
         
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && session && !state.user) {
           await loadUserProfile(session.user);
           await loadRatings();
           await loadFriends();
@@ -790,26 +790,34 @@
         } else if (event === 'SIGNED_OUT') {
           state.user = null;
           showAuthModal('login');
-        } else if (event === 'PASSWORD_RECOVERY') {
-          // User clicked password reset link - show them a way to set new password
-          alert('Please set a new password using the form that should appear.');
         }
       });
 
+      // Initial load
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         showAuthModal('login');
+        document.getElementById('app').innerHTML = ''; // Clear loading message
         return;
       }
 
-      await loadUserProfile(user);
-      await loadRatings();
-      await loadFriends();
-      await fetchContent();
-      
-      renderApp();
-      setupEventListeners();
+      try {
+        await loadUserProfile(user);
+        await loadRatings();
+        await loadFriends();
+        await fetchContent();
+        
+        renderApp();
+        setupEventListeners();
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        document.getElementById('app').innerHTML = `
+          <div class="error-message" style="max-width: 600px; margin: 4rem auto;">
+            Error loading app: ${error.message}
+          </div>
+        `;
+      }
     }
 
     // Authentication
