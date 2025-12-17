@@ -778,63 +778,69 @@
     async function init() {
       console.log('Init started');
       
-      // Listen for auth state changes (handles magic links, password resets, etc.)
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth event:', event);
-        
-        if (event === 'SIGNED_IN' && session && !state.user) {
-          console.log('Auth state change: loading user profile');
-          await loadUserProfile(session.user);
-          console.log('Auth state change: loading ratings');
-          await loadRatings();
-          console.log('Auth state change: loading friends');
-          await loadFriends();
-          console.log('Auth state change: fetching content');
-          await fetchContent();
-          console.log('Auth state change: rendering app');
-          renderApp();
-          setupEventListeners();
-          console.log('Auth state change: complete');
-        } else if (event === 'SIGNED_OUT') {
-          state.user = null;
-          showAuthModal('login');
-        }
-      });
-
-      // Initial load
-      console.log('Getting current user');
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.log('No user found, showing auth modal');
-        showAuthModal('login');
-        document.getElementById('app').innerHTML = ''; // Clear loading message
-        return;
-      }
-
       try {
+        console.log('Getting current user');
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        console.log('User result:', user, 'Error:', error);
+        
+        if (error) {
+          console.error('Error getting user:', error);
+          showAuthModal('login');
+          document.getElementById('app').innerHTML = '';
+          return;
+        }
+        
+        if (!user) {
+          console.log('No user found, showing auth modal');
+          showAuthModal('login');
+          document.getElementById('app').innerHTML = '';
+          return;
+        }
+
         console.log('User found, loading profile');
         await loadUserProfile(user);
-        console.log('Profile loaded, loading ratings');
-        await loadRatings();
-        console.log('Ratings loaded, loading friends');
-        await loadFriends();
-        console.log('Friends loaded, fetching content');
-        await fetchContent();
+        console.log('Profile loaded:', state.user);
         
-        console.log('Content fetched, rendering app');
+        console.log('Loading ratings');
+        await loadRatings();
+        console.log('Ratings loaded');
+        
+        console.log('Loading friends');
+        await loadFriends();
+        console.log('Friends loaded');
+        
+        console.log('Fetching content');
+        await fetchContent();
+        console.log('Content fetched');
+        
+        console.log('Rendering app');
         renderApp();
-        console.log('App rendered, setting up event listeners');
+        console.log('App rendered');
+        
+        console.log('Setting up event listeners');
         setupEventListeners();
         console.log('Init complete!');
+        
       } catch (error) {
-        console.error('Error initializing app:', error);
+        console.error('Error in init:', error);
         document.getElementById('app').innerHTML = `
           <div class="error-message" style="max-width: 600px; margin: 4rem auto;">
-            Error loading app: ${error.message}
+            Error loading app: ${error.message}<br><br>
+            Check console for details.
           </div>
         `;
       }
+
+      // Listen for auth state changes (for logout, etc.)
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state changed:', event);
+        
+        if (event === 'SIGNED_OUT') {
+          state.user = null;
+          window.location.reload();
+        }
+      });
     }
 
     // Authentication
