@@ -779,8 +779,15 @@
       console.log('Init started');
       
       try {
-        console.log('Getting current session');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Getting current session with timeout');
+        
+        // Add a timeout wrapper
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session request timed out after 5s')), 5000)
+        );
+        
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
         
         console.log('Session result:', session, 'Error:', error);
         
@@ -830,7 +837,8 @@
         document.getElementById('app').innerHTML = `
           <div class="error-message" style="max-width: 600px; margin: 4rem auto;">
             Error loading app: ${error.message}<br><br>
-            Check console for details.
+            <button class="btn btn-primary" onclick="window.location.reload()">Retry</button>
+            <button class="btn btn-secondary" onclick="localStorage.clear(); window.location.reload()">Clear Cache & Retry</button>
           </div>
         `;
       }
