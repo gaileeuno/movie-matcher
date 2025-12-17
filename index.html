@@ -776,6 +776,26 @@
 
     // Initialize App
     async function init() {
+      // Listen for auth state changes (handles magic links, password resets, etc.)
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth event:', event);
+        
+        if (event === 'SIGNED_IN' && session) {
+          await loadUserProfile(session.user);
+          await loadRatings();
+          await loadFriends();
+          await fetchContent();
+          renderApp();
+          setupEventListeners();
+        } else if (event === 'SIGNED_OUT') {
+          state.user = null;
+          showAuthModal('login');
+        } else if (event === 'PASSWORD_RECOVERY') {
+          // User clicked password reset link - show them a way to set new password
+          alert('Please set a new password using the form that should appear.');
+        }
+      });
+
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -911,10 +931,14 @@
 
     // Load Data
     async function loadRatings() {
+      console.log('Loading ratings for current user:', state.user.id);
+      
       const { data } = await supabase
         .from('ratings')
         .select('*')
         .eq('user_id', state.user.id);
+
+      console.log('Current user ratings loaded from DB:', data);
 
       state.ratings = {};
       state.ratedItems = {};
@@ -926,6 +950,8 @@
         if (row.item_data) state.ratedItems[key] = row.item_data;
       });
 
+      console.log('State.ratings after loading current user:', state.ratings);
+
       // Load friend ratings if friends selected
       if (state.selectedFriends.length > 0) {
         await loadFriendRatings();
@@ -935,10 +961,14 @@
     async function loadFriendRatings() {
       const friendIds = state.selectedFriends.map(f => f.id);
       
+      console.log('Loading ratings for friend IDs:', friendIds);
+      
       const { data } = await supabase
         .from('ratings')
         .select('*')
         .in('user_id', friendIds);
+
+      console.log('Friend ratings loaded from DB:', data);
 
       data?.forEach(row => {
         const key = `${row.item_type}-${row.item_id}`;
@@ -948,6 +978,8 @@
           state.ratedItems[key] = row.item_data;
         }
       });
+      
+      console.log('State.ratings after loading friend ratings:', state.ratings);
     }
 
     async function loadFriends() {
@@ -1269,13 +1301,27 @@
       const allItems = [...state.movies, ...state.tvShows];
       const compareIds = [state.user.id, ...state.selectedFriends.map(f => f.id)];
       
-      return allItems.filter(item => {
+      console.log('Getting matches for user IDs:', compareIds);
+      console.log('Total items to check:', allItems.length);
+      
+      const matches = allItems.filter(item => {
         const itemType = item.title ? 'movie' : 'tv';
         const rating = getItemRating(item.id, itemType);
         
+        console.log(`Checking ${item.title || item.name}:`, rating);
+        
         // Check if all selected users have rated it as interested
-        return compareIds.every(userId => rating[userId] === true);
+        const isMatch = compareIds.every(userId => rating[userId] === true);
+        
+        if (isMatch) {
+          console.log('MATCH FOUND:', item.title || item.name);
+        }
+        
+        return isMatch;
       });
+      
+      console.log('Total matches found:', matches.length);
+      return matches;
     }
 
     function getMyList() {
