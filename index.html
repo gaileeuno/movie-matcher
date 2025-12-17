@@ -1181,15 +1181,30 @@
     }
 
     function toggleFriendSelection(friendId) {
+      console.log('toggleFriendSelection called with friendId:', friendId);
+      console.log('Current selectedFriends:', state.selectedFriends);
+      console.log('All friends:', state.friends);
+      
       const index = state.selectedFriends.findIndex(f => f.id === friendId);
+      console.log('Friend index in selectedFriends:', index);
+      
       if (index > -1) {
+        console.log('Removing friend from selection');
         state.selectedFriends.splice(index, 1);
       } else {
+        console.log('Adding friend to selection');
         const friend = state.friends.find(f => f.id === friendId);
+        console.log('Found friend object:', friend);
         if (friend) state.selectedFriends.push(friend);
       }
       
-      loadFriendRatings().then(() => renderApp());
+      console.log('Updated selectedFriends:', state.selectedFriends);
+      console.log('Loading friend ratings...');
+      
+      loadFriendRatings().then(() => {
+        console.log('Friend ratings loaded, rendering app');
+        renderApp();
+      });
     }
 
     // Content Fetching
