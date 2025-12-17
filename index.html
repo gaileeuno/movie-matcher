@@ -779,26 +779,29 @@
       console.log('Init started');
       
       try {
-        console.log('Getting current user');
-        const { data: { user }, error } = await supabase.auth.getUser();
+        console.log('Getting current session');
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        console.log('User result:', user, 'Error:', error);
+        console.log('Session result:', session, 'Error:', error);
         
         if (error) {
-          console.error('Error getting user:', error);
+          console.error('Error getting session:', error);
           showAuthModal('login');
           document.getElementById('app').innerHTML = '';
           return;
         }
         
-        if (!user) {
-          console.log('No user found, showing auth modal');
+        if (!session || !session.user) {
+          console.log('No session found, showing auth modal');
           showAuthModal('login');
           document.getElementById('app').innerHTML = '';
           return;
         }
 
-        console.log('User found, loading profile');
+        const user = session.user;
+        console.log('User found from session:', user.id);
+
+        console.log('Loading profile');
         await loadUserProfile(user);
         console.log('Profile loaded:', state.user);
         
