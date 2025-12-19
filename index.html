@@ -1054,10 +1054,11 @@
       const username = document.getElementById('addFriendUsername').value.trim();
       if (!username) return;
 
+      // Use ilike for case-insensitive search
       const { data: targetUser } = await supabase
         .from('user_profiles')
         .select('id')
-        .eq('username', username)
+        .ilike('username', username)
         .single();
 
       if (!targetUser) {
