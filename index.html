@@ -835,7 +835,20 @@
           setTimeout(() => reject(new Error('Session request timed out after 5s')), 5000)
         );
         
-        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
+        let session = null;
+        let error = null;
+        
+        try {
+          const result = await Promise.race([sessionPromise, timeoutPromise]);
+          session = result.data.session;
+          error = result.error;
+        } catch (timeoutError) {
+          console.error('Timeout getting session:', timeoutError);
+          // On timeout, just show login
+          showAuthModal('login');
+          document.getElementById('app').innerHTML = '';
+          return;
+        }
         
         console.log('Session result:', session, 'Error:', error);
         
@@ -1044,10 +1057,10 @@
           share_matches_only: true
         });
 
-      showAuthSuccess('Account created! You can now sign in.');
+      showAuthSuccess('Account created! Please check your email to verify your account before signing in.');
       
-      // Switch to login form after 2 seconds
-      setTimeout(() => showAuthModal('login'), 2000);
+      // Switch to login form after 3 seconds
+      setTimeout(() => showAuthModal('login'), 3000);
     });
 
     function showAuthError(message) {
