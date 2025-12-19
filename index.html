@@ -688,10 +688,6 @@
           <small style="color: #86868b; font-size: 0.8rem;">3-20 characters, letters, numbers, and underscores only</small>
         </div>
         <div class="form-group">
-          <label>Display Name</label>
-          <input type="text" class="form-control" id="signupDisplayName" required>
-        </div>
-        <div class="form-group">
           <label>Password</label>
           <input type="password" class="form-control" id="signupPassword" required minlength="6">
         </div>
@@ -915,7 +911,6 @@
       e.preventDefault();
       const email = document.getElementById('signupEmail').value;
       const username = document.getElementById('signupUsername').value;
-      const displayName = document.getElementById('signupDisplayName').value;
       const password = document.getElementById('signupPassword').value;
       
       // Create auth user
@@ -931,8 +926,7 @@
         .from('user_profiles')
         .insert({
           auth_id: authData.user.id,
-          username: username,
-          display_name: displayName
+          username: username
         });
 
       if (profileError) {
@@ -949,7 +943,10 @@
           share_matches_only: true
         });
 
-      showAuthSuccess('Account created! Please check your email to verify.');
+      showAuthSuccess('Account created! You can now sign in.');
+      
+      // Switch to login form after 2 seconds
+      setTimeout(() => showAuthModal('login'), 2000);
     });
 
     function showAuthError(message) {
@@ -1030,8 +1027,8 @@
         .from('friendships')
         .select(`
           *,
-          user:user_profiles!friendships_user_id_fkey(id, username, display_name),
-          friend:user_profiles!friendships_friend_id_fkey(id, username, display_name)
+          user:user_profiles!friendships_user_id_fkey(id, username),
+          friend:user_profiles!friendships_friend_id_fkey(id, username)
         `)
         .or(`user_id.eq.${state.user.id},friend_id.eq.${state.user.id}`)
         .eq('status', 'accepted');
@@ -1045,7 +1042,7 @@
         .from('friendships')
         .select(`
           *,
-          user:user_profiles!friendships_user_id_fkey(id, username, display_name)
+          user:user_profiles!friendships_user_id_fkey(id, username)
         `)
         .eq('friend_id', state.user.id)
         .eq('status', 'pending');
@@ -1142,10 +1139,9 @@
         requestsList.innerHTML = state.friendRequests.map(req => `
           <div class="friend-item">
             <div class="friend-info">
-              <div class="friend-avatar">${req.user.display_name[0].toUpperCase()}</div>
+              <div class="friend-avatar">${req.user.username[0].toUpperCase()}</div>
               <div class="friend-details">
-                <div class="friend-name">${req.user.display_name}</div>
-                <div class="friend-username">@${req.user.username}</div>
+                <div class="friend-name">@${req.user.username}</div>
               </div>
             </div>
             <div class="friend-actions">
@@ -1164,10 +1160,9 @@
         friendsList.innerHTML = state.friends.map(friend => `
           <div class="friend-item">
             <div class="friend-info">
-              <div class="friend-avatar">${friend.display_name[0].toUpperCase()}</div>
+              <div class="friend-avatar">${friend.username[0].toUpperCase()}</div>
               <div class="friend-details">
-                <div class="friend-name">${friend.display_name}</div>
-                <div class="friend-username">@${friend.username}</div>
+                <div class="friend-name">@${friend.username}</div>
               </div>
             </div>
             <div class="friend-actions">
@@ -1504,7 +1499,7 @@
       } else if (state.viewMode === 'matches') {
         items = getMatches();
         const comparingWith = state.selectedFriends.length > 0 
-          ? ` with ${state.selectedFriends.map(f => f.display_name).join(', ')}`
+          ? ` with ${state.selectedFriends.map(f => '@' + f.username).join(', ')}`
           : '';
         emptyMessage = `<div class="empty-state"><h3>No matches yet${comparingWith}</h3><p>Start rating content to find your perfect matches!</p></div>`;
       } else if (state.viewMode === 'mylist') {
@@ -1523,10 +1518,9 @@
 
         <div class="user-header">
           <div class="user-info">
-            <div class="user-avatar">${state.user.display_name[0].toUpperCase()}</div>
+            <div class="user-avatar">${state.user.username[0].toUpperCase()}</div>
             <div>
-              <div style="font-weight: 600;">${state.user.display_name}</div>
-              <div style="font-size: 0.85rem; color: #86868b;">@${state.user.username}</div>
+              <div style="font-weight: 600;">@${state.user.username}</div>
             </div>
           </div>
           <div style="display: flex; gap: 0.75rem;">
@@ -1546,7 +1540,7 @@
                   class="friend-chip ${state.selectedFriends.find(f => f.id === friend.id) ? 'selected' : ''}"
                   onclick="toggleFriendSelection('${friend.id}')"
                 >
-                  ${friend.display_name}
+                  @${friend.username}
                 </div>
               `).join('')}
             </div>
