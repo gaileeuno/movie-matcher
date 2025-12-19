@@ -1406,18 +1406,30 @@
       
       console.log('Getting matches for user IDs:', compareIds);
       console.log('Total items to check:', allItems.length);
+      console.log('Current user ID:', state.user.id);
+      console.log('Selected friends:', state.selectedFriends.map(f => ({ id: f.id, username: f.username })));
       
       const matches = allItems.filter(item => {
         const itemType = item.title ? 'movie' : 'tv';
         const rating = getItemRating(item.id, itemType);
         
         console.log(`Checking ${item.title || item.name}:`, rating);
+        console.log(`  - Rating object keys:`, Object.keys(rating));
+        console.log(`  - Checking against IDs:`, compareIds);
         
         // Check if all selected users have rated it as interested
-        const isMatch = compareIds.every(userId => rating[userId] === true);
+        const results = compareIds.map(userId => {
+          const hasRated = rating[userId] === true;
+          console.log(`    - User ${userId}: ${hasRated ? 'YES (interested)' : rating[userId] === false ? 'NO (passed)' : 'NOT RATED'}`);
+          return hasRated;
+        });
+        
+        const isMatch = results.every(r => r === true);
+        
+        console.log(`  - Is match? ${isMatch} (all must be true: [${results.join(', ')}])`);
         
         if (isMatch) {
-          console.log('MATCH FOUND:', item.title || item.name);
+          console.log('✅ MATCH FOUND:', item.title || item.name);
         }
         
         return isMatch;
