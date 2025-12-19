@@ -668,11 +668,27 @@
           <label>Password</label>
           <input type="password" class="form-control" id="loginPassword" required>
         </div>
+        <div style="text-align: right; margin-bottom: 1rem;">
+          <a href="#" id="showForgotPassword" style="color: #0071e3; text-decoration: none; font-size: 0.9rem;">Forgot password?</a>
+        </div>
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">Sign In</button>
         </div>
         <div class="form-toggle">
           Don't have an account? <a href="#" id="showSignup">Sign up</a>
+        </div>
+      </form>
+
+      <!-- Forgot Password Form -->
+      <form id="forgotPasswordForm" class="hidden">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" class="form-control" id="forgotPasswordEmail" required>
+          <small style="color: #86868b; font-size: 0.8rem;">We'll send you a password reset link</small>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Send Reset Link</button>
+          <button type="button" class="btn btn-secondary" id="backToLogin">Back to Login</button>
         </div>
       </form>
 
@@ -865,19 +881,27 @@
       const modal = document.getElementById('authModal');
       const loginForm = document.getElementById('loginForm');
       const signupForm = document.getElementById('signupForm');
+      const forgotPasswordForm = document.getElementById('forgotPasswordForm');
       const title = document.getElementById('authTitle');
       const subtitle = document.getElementById('authSubtitle');
+      
+      // Hide all forms first
+      loginForm.classList.add('hidden');
+      signupForm.classList.add('hidden');
+      forgotPasswordForm.classList.add('hidden');
       
       if (mode === 'login') {
         title.textContent = 'Welcome Back';
         subtitle.textContent = 'Sign in to continue';
         loginForm.classList.remove('hidden');
-        signupForm.classList.add('hidden');
-      } else {
+      } else if (mode === 'signup') {
         title.textContent = 'Create Account';
         subtitle.textContent = 'Join Matchflix and find your perfect watch';
-        loginForm.classList.add('hidden');
         signupForm.classList.remove('hidden');
+      } else if (mode === 'forgot') {
+        title.textContent = 'Reset Password';
+        subtitle.textContent = 'Enter your email to receive a reset link';
+        forgotPasswordForm.classList.remove('hidden');
       }
       
       modal.classList.add('show');
@@ -891,6 +915,32 @@
     document.getElementById('showLogin')?.addEventListener('click', (e) => {
       e.preventDefault();
       showAuthModal('login');
+    });
+
+    document.getElementById('showForgotPassword')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      showAuthModal('forgot');
+    });
+
+    document.getElementById('backToLogin')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      showAuthModal('login');
+    });
+
+    document.getElementById('forgotPasswordForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('forgotPasswordEmail').value;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+      });
+      
+      if (error) {
+        showAuthError(error.message);
+      } else {
+        showAuthSuccess('Password reset link sent! Check your email.');
+        setTimeout(() => showAuthModal('login'), 3000);
+      }
     });
 
     document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
