@@ -755,6 +755,31 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Account Settings</h2>
+        <p>Update your account information</p>
+      </div>
+
+      <div id="settingsError" class="error-message hidden"></div>
+      <div id="settingsSuccess" class="success-message hidden"></div>
+
+      <!-- Change Username -->
+      <div class="form-group">
+        <label>Change Username</label>
+        <input type="text" class="form-control" id="newUsername" pattern="[a-zA-Z0-9_]{3,20}" placeholder="Enter new username">
+        <small style="color: #86868b; font-size: 0.8rem;">3-20 characters, letters, numbers, and underscores only</small>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="changeUsername()">Update Username</button>
+        <button class="btn btn-secondary" onclick="closeSettingsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Configuration
     const TMDB_API_KEY = 'a781f5168ff3df908b3f1d4214ad0e6e';
@@ -1180,6 +1205,83 @@
       document.getElementById('friendModal').classList.remove('show');
     }
 
+    // Settings Modal Functions
+    function openSettingsModal() {
+      document.getElementById('settingsModal').classList.add('show');
+      document.getElementById('newUsername').value = '';
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.remove('show');
+    }
+
+    function showSettingsError(message) {
+      const errorDiv = document.getElementById('settingsError');
+      errorDiv.textContent = message;
+      errorDiv.classList.remove('hidden');
+      setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+    }
+
+    function showSettingsSuccess(message) {
+      const successDiv = document.getElementById('settingsSuccess');
+      successDiv.textContent = message;
+      successDiv.classList.remove('hidden');
+      setTimeout(() => successDiv.classList.add('hidden'), 3000);
+    }
+
+    async function changeUsername() {
+      const newUsername = document.getElementById('newUsername').value.trim();
+      
+      if (!newUsername) {
+        showSettingsError('Please enter a new username');
+        return;
+      }
+
+      // Validate username format
+      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+      if (!usernameRegex.test(newUsername)) {
+        showSettingsError('Username must be 3-20 characters (letters, numbers, underscores only)');
+        return;
+      }
+
+      try {
+        // Check if username is already taken
+        const { data: existingUser } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .ilike('username', newUsername)
+          .single();
+
+        if (existingUser && existingUser.id !== state.user.id) {
+          showSettingsError('Username is already taken');
+          return;
+        }
+
+        // Update username
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({ username: newUsername })
+          .eq('id', state.user.id);
+
+        if (error) throw error;
+
+        // Update local state
+        state.user.username = newUsername;
+        
+        showSettingsSuccess('Username updated successfully!');
+        
+        // Refresh the app after 1 second to show new username everywhere
+        setTimeout(() => {
+          renderApp();
+          closeSettingsModal();
+        }, 1000);
+
+      } catch (error) {
+        console.error('Error updating username:', error);
+        showSettingsError(error.message);
+      }
+    }
+
     function renderFriendModal() {
       // Render friend requests
       const requestsSection = document.getElementById('friendRequestsSection');
@@ -1401,10 +1503,15 @@
     }
 
     function getMatches() {
+      console.log('=== GET MATCHES CALLED ===');
+      console.log('state.selectedFriends:', state.selectedFriends);
+      console.log('state.friends:', state.friends);
+      
       const allItems = [...state.movies, ...state.tvShows];
       const compareIds = [state.user.id, ...state.selectedFriends.map(f => f.id)];
       
       console.log('Getting matches for user IDs:', compareIds);
+      console.log('compareIds length:', compareIds.length);
       console.log('Total items to check:', allItems.length);
       console.log('Current user ID:', state.user.id);
       console.log('Selected friends:', state.selectedFriends.map(f => ({ id: f.id, username: f.username })));
@@ -1418,13 +1525,16 @@
         console.log(`  - Checking against IDs:`, compareIds);
         
         // Check if all selected users have rated it as interested
+        // IMPORTANT: Must be explicitly true, not undefined/null/false
         const results = compareIds.map(userId => {
-          const hasRated = rating[userId] === true;
-          console.log(`    - User ${userId}: ${hasRated ? 'YES (interested)' : rating[userId] === false ? 'NO (passed)' : 'NOT RATED'}`);
+          const userRating = rating[userId];
+          const hasRated = userRating === true;
+          console.log(`    - User ${userId}: ${hasRated ? 'YES (interested)' : userRating === false ? 'NO (passed)' : 'NOT RATED (undefined)'}`);
           return hasRated;
         });
         
-        const isMatch = results.every(r => r === true);
+        // Only match if ALL users have explicitly rated as interested (true)
+        const isMatch = compareIds.length > 0 && results.every(r => r === true);
         
         console.log(`  - Is match? ${isMatch} (all must be true: [${results.join(', ')}])`);
         
@@ -1587,6 +1697,7 @@
             </div>
           </div>
           <div style="display: flex; gap: 0.75rem;">
+            <button class="btn btn-secondary" onclick="openSettingsModal()">Settings</button>
             <button class="btn btn-secondary" onclick="openFriendModal()">
               Friends ${state.friendRequests.length > 0 ? `(${state.friendRequests.length})` : ''}
             </button>
